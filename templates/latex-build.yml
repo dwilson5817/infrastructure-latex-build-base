@@ -1,0 +1,41 @@
+spec:
+  inputs:
+    src_dir:
+      description: "Directory containing the main .tex file, relative to the repo root"
+      default: "src"
+    main_file:
+      description: "Name of the root .tex file (without extension)"
+      default: "main"
+    output_dir:
+      description: "Directory to write the PDF and logs into, relative to the repo root"
+      default: "."
+    image:
+      description: "Docker image to use for the build"
+      default: "texlive/texlive:latest"
+    stage:
+      description: "CI stage to run this job in"
+      default: "build"
+    artifact_expire_in:
+      description: "How long to retain the PDF artifact"
+      default: "never"
+
+---
+
+latex-build:
+  image: $[[ inputs.image ]]
+  stage: $[[ inputs.stage ]]
+  script:
+    - |
+      pdflatex \
+        -file-line-error \
+        -interaction=nonstopmode \
+        -synctex=1 \
+        -output-format=pdf \
+        -output-dir="${CI_PROJECT_DIR}/$[[ inputs.output_dir ]]" \
+        "${CI_PROJECT_DIR}/$[[ inputs.src_dir ]]/$[[ inputs.main_file ]].tex"
+  after_script:
+    - cat "${CI_PROJECT_DIR}/$[[ inputs.output_dir ]]/$[[ inputs.main_file ]].log" || true
+  artifacts:
+    paths:
+      - "$[[ inputs.output_dir ]]/$[[ inputs.main_file ]].pdf"
+    expire_in: $[[ inputs.artifact_expire_in ]]
